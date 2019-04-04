@@ -155,8 +155,7 @@ val.txt file. In order to obtain the test images you can modify the
 script on your own.
 
 ## TODO
-- [x] Add a embedding visualization tools to visualize the embedding feature map
-- [x] Add detailed explanation of training the components of lanenet separately.
+- [ ] Add Enet backbone for encoder and decoder.
 - [x] Training the model on different dataset
 - ~~[ ] Adjust the lanenet hnet model and merge the hnet model to the main lanenet model~~
 - [ ] Change the normalization function from BN to GN

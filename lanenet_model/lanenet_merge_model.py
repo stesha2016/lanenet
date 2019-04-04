@@ -14,6 +14,7 @@ from encoder_decoder_model import vgg_encoder
 from encoder_decoder_model import fcn_decoder
 from encoder_decoder_model import dense_encoder
 from encoder_decoder_model import cnn_basenet
+from encoder_decoder_model import enet_stage
 from lanenet_model import lanenet_discriminative_loss
 
 
@@ -23,18 +24,21 @@ class LaneNet(cnn_basenet.CNNBaseModel):
     """
     def __init__(self, phase, net_flag='vgg'):
         """
-
+        Init for LaneNet class
         """
         super(LaneNet, self).__init__()
         self._net_flag = net_flag
         self._phase = phase
-        if self._net_flag == 'vgg':
+        if self._net_flag.lower() == 'vgg':
             self._encoder = vgg_encoder.VGG16Encoder(phase=phase)
-        elif self._net_flag == 'dense':
+        elif self._net_flag.lower() == 'dense':
             self._encoder = dense_encoder.DenseEncoder(l=20, growthrate=8,
                                                        with_bc=True,
                                                        phase=phase,
                                                        n=5)
+        elif self._net_flag.lower() == 'enet':
+            # Need not encoder and decoder for enet.
+            return
         self._decoder = fcn_decoder.FCNDecoder(phase=phase)
         return
 
@@ -54,25 +58,61 @@ class LaneNet(cnn_basenet.CNNBaseModel):
         :return:
         """
         with tf.variable_scope(name):
-            # first encode
-            encode_ret = self._encoder.encode(input_tensor=input_tensor,
-                                              name='encode')
+            if self._net_flag.lower() == 'enet':
+                '''
+                LaneNet only shares the first two stages(1 and 2) between the two branches, leaving stage 3 of the ENet encoder
+                and the full ENet decoder as the backbone of each separate branch.
+                '''
+                # shared stages
+                with tf.variable_scope('LaneNetBase'):
+                    initial = enet_stage.iniatial_block(input_tensor, isTraining=self._phase)
+                    stage1, pooling_indices_1, inputs_shape_1 = enet_stage.ENet_stage1(initial, isTraining=self._phase)
+                    stage2, pooling_indices_2, inputs_shape_2 = enet_stage.ENet_stage2(stage1, isTraining=self._phase)
 
-            # second decode
-            if self._net_flag.lower() == 'vgg':
-                decode_ret = self._decoder.decode(input_tensor_dict=encode_ret,
-                                                  name='decode',
-                                                  decode_layer_list=['pool5',
-                                                                     'pool4',
-                                                                     'pool3'])
-                return decode_ret
-            elif self._net_flag.lower() == 'dense':
-                decode_ret = self._decoder.decode(input_tensor_dict=encode_ret,
-                                                  name='decode',
-                                                  decode_layer_list=['Dense_Block_5',
-                                                                     'Dense_Block_4',
-                                                                     'Dense_Block_3'])
-                return decode_ret
+                # Segmentation branch
+                with tf.variable_scope('LaneNetSeg'):
+                    segStage3 = enet_stage.ENet_stage3(stage2, isTraining=self._phase)
+                    segStage4 = enet_stage.ENet_stage4(segStage3, pooling_indices_2, inputs_shape_2, stage1, isTraining=self._phase)
+                    segStage5 = enet_stage.ENet_stage5(segStage4, pooling_indices_1, inputs_shape_1, initial, isTraining=self._phase)
+                    segLogits = tf.layers.conv2d_transpose(segStage5, 2, [2, 2], strides=2, padding='same', name='fullconv')
+                    segProbabilities = tf.nn.softmax(segLogits, name='logits_to_softmax')
+
+                # Embedding branch
+                with tf.variable_scope('LaneNetEm'):
+                    emStage3 = enet_stage.ENet_stage3(stage2, isTraining=self._phase)
+                    emStage4 = enet_stage.ENet_stage4(emStage3, pooling_indices_2, inputs_shape_2, stage1, isTraining=self._phase)
+                    emStage5 = enet_stage.ENet_stage5(emStage4, pooling_indices_1, inputs_shape_1, initial, isTraining=self._phase)
+                    emLogits = tf.layers.conv2d_transpose(emStage5, 4, [2, 2], strides=2, padding='same', name='fullconv')
+                    emProbabilities = tf.nn.softmax(emLogits, name='logits_to_softmax')
+
+                ret = {
+                    'seglogits': segLogits,
+                    'segProbabilities': segProbabilities,
+                    'emLogits': emLogits,
+                    'emProbabilities': emProbabilities
+                }
+
+                return ret
+            else:
+                # first encode
+                encode_ret = self._encoder.encode(input_tensor=input_tensor,
+                                                  name='encode')
+
+                # second decode
+                if self._net_flag.lower() == 'vgg':
+                    decode_ret = self._decoder.decode(input_tensor_dict=encode_ret,
+                                                      name='decode',
+                                                      decode_layer_list=['pool5',
+                                                                         'pool4',
+                                                                         'pool3'])
+                    return decode_ret
+                elif self._net_flag.lower() == 'dense':
+                    decode_ret = self._decoder.decode(input_tensor_dict=encode_ret,
+                                                      name='decode',
+                                                      decode_layer_list=['Dense_Block_5',
+                                                                         'Dense_Block_4',
+                                                                         'Dense_Block_3'])
+                    return decode_ret
 
     def compute_loss(self, input_tensor, binary_label, instance_label, name):
         """
