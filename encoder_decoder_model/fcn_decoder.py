@@ -24,7 +24,7 @@ class FCNDecoder(cnn_basenet.CNNBaseModel):
 
         """
         super(FCNDecoder, self).__init__()
-        self._train_phase = tf.constant('train', dtype=tf.string)
+        self._train_phase = tf.constant(True, dtype=tf.bool)
         self._phase = phase
         self._is_training = self._init_phase()
 

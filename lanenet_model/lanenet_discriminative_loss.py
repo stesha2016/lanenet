@@ -43,14 +43,20 @@ def discriminative_loss_single(
             label_shape[1] * label_shape[0], feature_dim])
 
     # 统计实例个数
+    # unique_labels统计出correct_label中一共有几种数值，unique_id为correct_label中的每个数值是属于unique_labels中第几类
+    # counts统计unique_labels中每个数值在correct_label中出现了几次
     unique_labels, unique_id, counts = tf.unique_with_counts(correct_label)
     counts = tf.cast(counts, tf.float32)
     num_instances = tf.size(unique_labels)
 
     # 计算pixel embedding均值向量
+    # segmented_sum是把reshaped_pred中对应unique_id不同类别的数字相加
+    # 比如unique_id[0, 0, 1, 1, 0],reshaped_pred[1, 2, 3, 4, 5]，最后等于[1+2+5,3+4],channel层不相加
     segmented_sum = tf.unsorted_segment_sum(
         reshaped_pred, unique_id, num_instances)
+    # 除以每个类别的像素在gt中出现的次数
     mu = tf.div(segmented_sum, tf.reshape(counts, (-1, 1)))
+    # 然后再还原为原图的形式
     mu_expand = tf.gather(mu, unique_id)
 
     # 计算公式的loss(var)

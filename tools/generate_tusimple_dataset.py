@@ -48,10 +48,6 @@ def process_json_file(json_file_path, src_dir, ori_dst_dir, binary_dst_dir, inst
         for line_index, line in enumerate(file):
             info_dict = json.loads(line)
 
-            image_dir = ops.split(info_dict['raw_file'])[0]
-            image_dir_split = image_dir.split('/')[1:]
-            image_dir_split.append(ops.split(info_dict['raw_file'])[1])
-            image_name = '_'.join(image_dir_split)
             image_path = ops.join(src_dir, info_dict['raw_file'])
             assert ops.exists(image_path), '{:s} not exist'.format(image_path)
 
@@ -94,7 +90,7 @@ def process_json_file(json_file_path, src_dir, ori_dst_dir, binary_dst_dir, inst
             cv2.imwrite(dst_instance_image_path, dst_instance_image)
             cv2.imwrite(dst_rgb_image_path, src_image)
 
-            print('Process {:s} success'.format(image_name))
+            print('Process {:s} success'.format(image_path))
 
 
 def gen_train_sample(src_dir, b_gt_image_dir, i_gt_image_dir, image_dir):
@@ -139,31 +135,35 @@ def process_tusimple_dataset(src_dir):
     :param src_dir:
     :return:
     """
-    traing_folder_path = ops.join(src_dir, 'training')
+    training_folder_path = ops.join(src_dir, 'training')
     testing_folder_path = ops.join(src_dir, 'testing')
-
-    os.makedirs(traing_folder_path, exist_ok=True)
-    os.makedirs(testing_folder_path, exist_ok=True)
+    if not os.path.exists(training_folder_path):
+        os.makedirs(training_folder_path)
+    if not os.path.exists(testing_folder_path):
+        os.makedirs(testing_folder_path)
 
     for json_label_path in glob.glob('{:s}/label*.json'.format(src_dir)):
         json_label_name = ops.split(json_label_path)[1]
 
-        shutil.copyfile(json_label_path, ops.join(traing_folder_path, json_label_name))
+        shutil.copyfile(json_label_path, ops.join(training_folder_path, json_label_name))
 
     for json_label_path in glob.glob('{:s}/test*.json'.format(src_dir)):
         json_label_name = ops.split(json_label_path)[1]
 
         shutil.copyfile(json_label_path, ops.join(testing_folder_path, json_label_name))
 
-    gt_image_dir = ops.join(traing_folder_path, 'gt_image')
-    gt_binary_dir = ops.join(traing_folder_path, 'gt_binary_image')
-    gt_instance_dir = ops.join(traing_folder_path, 'gt_instance_image')
+    gt_image_dir = ops.join(training_folder_path, 'gt_image')
+    gt_binary_dir = ops.join(training_folder_path, 'gt_binary_image')
+    gt_instance_dir = ops.join(training_folder_path, 'gt_instance_image')
 
-    os.makedirs(gt_image_dir, exist_ok=True)
-    os.makedirs(gt_binary_dir, exist_ok=True)
-    os.makedirs(gt_instance_dir, exist_ok=True)
+    if not os.path.exists(gt_image_dir):
+        os.makedirs(gt_image_dir)
+    if not os.path.exists(gt_binary_dir):
+        os.makedirs(gt_binary_dir)
+    if not os.path.exists(gt_instance_dir):
+        os.makedirs(gt_instance_dir)
 
-    for json_label_path in glob.glob('{:s}/*.json'.format(traing_folder_path)):
+    for json_label_path in glob.glob('{:s}/*.json'.format(training_folder_path)):
         process_json_file(json_label_path, src_dir, gt_image_dir, gt_binary_dir, gt_instance_dir)
 
     gen_train_sample(src_dir, gt_binary_dir, gt_instance_dir, gt_image_dir)

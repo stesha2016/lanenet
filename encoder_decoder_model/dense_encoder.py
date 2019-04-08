@@ -37,7 +37,7 @@ class DenseEncoder(cnn_basenet.CNNBaseModel):
         self._growthrate = growthrate
         self._with_bc = with_bc
         self._phase = phase
-        self._train_phase = tf.constant('train', dtype=tf.string)
+        self._train_phase = tf.constant(True, dtype=tf.bool)
         self._test_phase = tf.constant('test', dtype=tf.string)
         self._is_training = self._init_phase()
         self._bc_theta = bc_theta

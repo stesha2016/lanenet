@@ -156,6 +156,7 @@ script on your own.
 
 ## TODO
 - [ ] Add Enet backbone for encoder and decoder.
+- [ ] Add Enet binary and instance loss.
 - [x] Training the model on different dataset
 - ~~[ ] Adjust the lanenet hnet model and merge the hnet model to the main lanenet model~~
 - [ ] Change the normalization function from BN to GN

@@ -84,7 +84,7 @@ def train_net(dataset_dir, weights_path=None, net_flag='vgg'):
                                                shape=[CFG.TRAIN.BATCH_SIZE, CFG.TRAIN.IMG_HEIGHT,
                                                       CFG.TRAIN.IMG_WIDTH],
                                                name='instance_input_label')
-        phase = tf.placeholder(dtype=tf.string, shape=None, name='net_phase')
+        phase = tf.placeholder(dtype=tf.bool, shape=None, name='net_phase')
 
         net = lanenet_merge_model.LaneNet(net_flag=net_flag, phase=phase)
 
@@ -299,7 +299,7 @@ def train_net(dataset_dir, weights_path=None, net_flag='vgg'):
                          ' mean_cost_time= {:5f}s '.
                          format(epoch + 1, c, binary_loss, instance_loss, train_accuracy,
                                 np.mean(train_cost_time_mean)))
-                train_cost_time_mean.clear()
+                train_cost_time_mean = []
 
             if epoch % CFG.TRAIN.TEST_DISPLAY_STEP == 0:
                 log.info('Epoch_Val: {:d} total_loss= {:6f} binary_seg_loss= {:6f} '
@@ -307,7 +307,7 @@ def train_net(dataset_dir, weights_path=None, net_flag='vgg'):
                          'mean_cost_time= {:5f}s '.
                          format(epoch + 1, c_val, val_binary_seg_loss, val_instance_seg_loss, val_accuracy,
                                 np.mean(val_cost_time_mean)))
-                val_cost_time_mean.clear()
+                val_cost_time_mean = []
 
             if epoch % 2000 == 0:
                 saver.save(sess=sess, save_path=model_save_path, global_step=epoch)

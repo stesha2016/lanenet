@@ -107,7 +107,6 @@ class DataSet(object):
 
             for gt_img_path in gt_img_list:
                 gt_imgs.append(cv2.imread(gt_img_path, cv2.IMREAD_COLOR))
-
             for gt_label_path in gt_label_binary_list:
                 label_img = cv2.imread(gt_label_path, cv2.IMREAD_COLOR)
                 label_binary = np.zeros([label_img.shape[0], label_img.shape[1]], dtype=np.uint8)
