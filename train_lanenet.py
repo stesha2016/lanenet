@@ -90,7 +90,7 @@ def train_net(dataset_dir, weights_path=None, net_flag='vgg'):
 
     # calculate the loss
     compute_ret = net.compute_loss(input_tensor=input_tensor, binary_label=binary_label_tensor,
-                                   instance_label=instance_label_tensor, weight=np.exp(4), name='lanenet_model')
+                                   instance_label=instance_label_tensor, name='lanenet_model')
     total_loss = compute_ret['total_loss']
     binary_seg_loss = compute_ret['binary_seg_loss']
     disc_loss = compute_ret['discriminative_loss']
@@ -205,7 +205,6 @@ def train_net(dataset_dir, weights_path=None, net_flag='vgg'):
             t_start = time.time()
             gt_imgs, binary_gt_labels, instance_gt_labels = train_dataset.next_batch(CFG.TRAIN.BATCH_SIZE)
             gt_imgs = [tmp - VGG_MEAN for tmp in gt_imgs]
-            phase_train = True
 
             _, c, train_accuracy, train_summary, binary_loss, instance_loss, embedding, binary_seg_img = \
                 sess.run([optimizer, total_loss,
@@ -218,7 +217,7 @@ def train_net(dataset_dir, weights_path=None, net_flag='vgg'):
                          feed_dict={input_tensor: gt_imgs,
                                     binary_label_tensor: binary_gt_labels,
                                     instance_label_tensor: instance_gt_labels,
-                                    phase: phase_train})
+                                    phase: True})
 
             if math.isnan(c) or math.isnan(binary_loss) or math.isnan(instance_loss):
                 log.error('cost is: {:.5f}'.format(c))

@@ -154,6 +154,10 @@ need to select several lines from the train.txt to generate your own
 val.txt file. In order to obtain the test images you can modify the 
 script on your own.
 
+## Training process
+ * stage1: 60k epochs, accuracy about 92%.
+ * stage2: 2k epochs, restore from stage1 decay learning rate to 10%, accuracy about 95%.
+
 ## TODO
 - [ ] Add Enet backbone for encoder and decoder.
 - [ ] Add Enet binary and instance loss.
