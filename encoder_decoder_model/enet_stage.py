@@ -205,17 +205,17 @@ def bottleneck(inputs,
 
         #First projection with 1x1 kernel (dimensionality reduction)
         net = tf.layers.conv2d(inputs, reduced_depth, [1, 1], name=scope+'_conv1')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm1')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm1')
         net = prelu(net, scope=scope+'_prelu1', decoder=decoder)
 
         #Second conv block --- apply dilated convolution here
         net = tf.layers.conv2d(net, reduced_depth, [filter_size, filter_size], padding='same', dilation_rate=dilation_rate, name=scope+'_dilated_conv2')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm2')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm2')
         net = prelu(net, scope=scope+'_prelu2', decoder=decoder)
 
         #Final projection with 1x1 kernel (Expansion)
         net = tf.layers.conv2d(net, output_depth, [1,1], name=scope+'_conv3')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm3')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm3')
         net = prelu(net, scope=scope+'_prelu3', decoder=decoder)
 
         #Regularizer
@@ -236,18 +236,18 @@ def bottleneck(inputs,
 
         #First projection with 1x1 kernel (dimensionality reduction)
         net = tf.layers.conv2d(inputs, reduced_depth, [1, 1], name=scope+'_conv1')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm1')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm1')
         net = prelu(net, scope=scope+'_prelu1', decoder=decoder)
 
         #Second conv block --- apply asymmetric conv here
         net = tf.layers.conv2d(net, reduced_depth, [filter_size, 1], padding='same', name=scope+'_asymmetric_conv2a')
         net = tf.layers.conv2d(net, reduced_depth, [1, filter_size], padding='same', name=scope+'_asymmetric_conv2b')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm2')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm2')
         net = prelu(net, scope=scope+'_prelu2', decoder=decoder)
 
         #Final projection with 1x1 kernel
         net = tf.layers.conv2d(net, output_depth, [1, 1], name=scope+'_conv3')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm3')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm3')
         net = prelu(net, scope=scope+'_prelu3', decoder=decoder)
 
         #Regularizer
@@ -276,23 +276,23 @@ def bottleneck(inputs,
         #for the pooling indices to work correctly. However, the initial pooled layer was padded, so need to reduce dimension
         #before unpooling. In the paper, padding is replaced with convolution for this purpose of reducing the depth!
         net_unpool = tf.layers.conv2d(inputs, output_depth, [1, 1], name=scope+'_main_conv1')
-        net_unpool = tf.layers.batch_normalization(net_unpool, training=is_training, name=scope+'batch_norm1')
+        net_unpool = tf.layers.batch_normalization(net_unpool, training=is_training, name=scope+'_batchnorm1')
         net_unpool = unpool(net_unpool, pooling_indices, output_shape=output_shape, scope='unpool')
 
         #======SUB BRANCH=======
         #First 1x1 projection to reduce depth
         net = tf.layers.conv2d(inputs, reduced_depth, [1, 1], name=scope+'_conv1')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm2')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm2')
         net = prelu(net, scope=scope+'_prelu1', decoder=decoder)
 
         #Second conv block -----------------------------> NOTE: using tf.nn.conv2d_transpose for variable input shape.
         net = tf.layers.conv2d_transpose(net, reduced_depth, [filter_size, filter_size], strides=2, padding='same', name=scope+'_transposed_conv2')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm3')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm3')
         net = prelu(net, scope=scope+'_prelu2', decoder=decoder)
 
         #Final projection with 1x1 kernel
         net = tf.layers.conv2d(net, output_depth, [1, 1], name=scope+'_conv3')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm4')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm4')
         net = prelu(net, scope=scope+'_prelu3', decoder=decoder)
 
         #Regularizer
@@ -313,17 +313,17 @@ def bottleneck(inputs,
 
         #First projection with 1x1 kernel
         net = tf.layers.conv2d(inputs, reduced_depth, [1, 1], name=scope+'_conv1')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm1')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm1')
         net = prelu(net, scope=scope+'_prelu1', decoder=decoder)
 
         #Second conv block
         net = tf.layers.conv2d(net, reduced_depth, [filter_size, filter_size], padding='same', name=scope+'_conv2')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm2')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm2')
         net = prelu(net, scope=scope+'_prelu2', decoder=decoder)
 
         #Final projection with 1x1 kernel
         net = tf.layers.conv2d(net, output_depth, [1, 1], name=scope+'_conv3')
-        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batch_norm3')
+        net = tf.layers.batch_normalization(net, training=is_training, name=scope+'_batchnorm3')
         net = prelu(net, scope=scope+'_prelu3', decoder=decoder)
 
         #Regularizer

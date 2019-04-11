@@ -54,30 +54,28 @@ def discriminative_loss_single(
     # 比如unique_id[0, 0, 1, 1, 0],reshaped_pred[1, 2, 3, 4, 5]，最后等于[1+2+5,3+4],channel层不相加
     segmented_sum = tf.unsorted_segment_sum(
         reshaped_pred, unique_id, num_instances)
-    # 除以每个类别的像素在gt中出现的次数
+    # 除以每个类别的像素在gt中出现的次数，是每个类别像素的均值 (?, 4)
     mu = tf.div(segmented_sum, tf.reshape(counts, (-1, 1)))
-    # 然后再还原为原图的形式
+    # 然后再还原为原图的形式，现在mu_expand中的数据是与correct_label的分布一致，但是数值不一样
     mu_expand = tf.gather(mu, unique_id)
 
     # 计算公式的loss(var)
+    # 对channel维度求范数-[131072，]
     distance = tf.norm(tf.subtract(mu_expand, reshaped_pred), axis=1)
     distance = tf.subtract(distance, delta_v)
+    # 小于0的设置为0，大于distance的设置为distance
     distance = tf.clip_by_value(distance, 0., distance)
     distance = tf.square(distance)
 
     l_var = tf.unsorted_segment_sum(distance, unique_id, num_instances)
     l_var = tf.div(l_var, counts)
     l_var = tf.reduce_sum(l_var)
-    l_var = tf.divide(l_var, tf.cast(num_instances, tf.float32))
+    l_var = tf.divide(l_var, tf.cast(num_instances * (num_instances - 1), tf.float32))
 
     # 计算公式的loss(dist)
     mu_interleaved_rep = tf.tile(mu, [num_instances, 1])
     mu_band_rep = tf.tile(mu, [1, num_instances])
-    mu_band_rep = tf.reshape(
-        mu_band_rep,
-        (num_instances *
-         num_instances,
-         feature_dim))
+    mu_band_rep = tf.reshape(mu_band_rep, (num_instances * num_instances, feature_dim))
 
     mu_diff = tf.subtract(mu_band_rep, mu_interleaved_rep)
 
@@ -98,12 +96,11 @@ def discriminative_loss_single(
     l_reg = tf.reduce_mean(tf.norm(mu, axis=1))
 
     # 合并损失按照原始Discriminative Loss论文中提到的参数合并
-    param_scale = 1.
     l_var = param_var * l_var
     l_dist = param_dist * l_dist
     l_reg = param_reg * l_reg
 
-    loss = param_scale * (l_var + l_dist + l_reg)
+    loss = l_var + l_dist + l_reg
 
     return loss, l_var, l_dist, l_reg
 

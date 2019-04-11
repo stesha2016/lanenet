@@ -12,6 +12,9 @@ import os.path as ops
 
 import cv2
 import numpy as np
+from config import global_config
+
+CFG = global_config.cfg
 
 try:
     from cv2 import cv2
@@ -106,16 +109,19 @@ class DataSet(object):
             gt_labels_instance = []
 
             for gt_img_path in gt_img_list:
-                gt_imgs.append(cv2.imread(gt_img_path, cv2.IMREAD_COLOR))
+                gt_img = cv2.imread(gt_img_path, cv2.IMREAD_COLOR)
+                gt_img = cv2.resize(gt_img, (CFG.TRAIN.IMG_WIDTH, CFG.TRAIN.IMG_HEIGHT))
+                gt_imgs.append(gt_img)
             for gt_label_path in gt_label_binary_list:
-                label_img = cv2.imread(gt_label_path, cv2.IMREAD_COLOR)
-                label_binary = np.zeros([label_img.shape[0], label_img.shape[1]], dtype=np.uint8)
-                idx = np.where((label_img[:, :, :] != [0, 0, 0]).all(axis=2))
-                label_binary[idx] = 1
+                label_img = cv2.imread(gt_label_path, cv2.IMREAD_GRAYSCALE)
+                label_img = label_img / 255
+                label_binary = cv2.resize(label_img, (CFG.TRAIN.IMG_WIDTH, CFG.TRAIN.IMG_HEIGHT), interpolation=cv2.INTER_NEAREST)
+                label_binary = np.expand_dims(label_binary, axis=-1)
                 gt_labels_binary.append(label_binary)
 
             for gt_label_path in gt_label_instance_list:
                 label_img = cv2.imread(gt_label_path, cv2.IMREAD_UNCHANGED)
+                label_img = cv2.resize(label_img, (CFG.TRAIN.IMG_WIDTH, CFG.TRAIN.IMG_HEIGHT), interpolation=cv2.INTER_NEAREST)
                 gt_labels_instance.append(label_img)
 
             self._next_batch_loop_count += 1

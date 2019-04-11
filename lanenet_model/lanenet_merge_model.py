@@ -110,7 +110,7 @@ class LaneNet(cnn_basenet.CNNBaseModel):
                                                                          'Dense_Block_3'])
                     return decode_ret
 
-    def compute_loss(self, input_tensor, binary_label, instance_label, name):
+    def compute_loss(self, input_tensor, binary_label, instance_label, weight, name):
         """
         计算LaneNet模型损失函数
         :param input_tensor:
@@ -125,36 +125,37 @@ class LaneNet(cnn_basenet.CNNBaseModel):
             decode_logits = inference_ret['logits']
             decode_deconv = inference_ret['deconv']
 
-            if self._net_flag.lower() == 'enet':
-                # 加入bounded inverse class weights
-                inverse_class_weights = tf.divide(1.0,
-                                                  tf.log(tf.add(tf.constant(1.02, tf.float32),
-                                                                tf.nn.softmax(decode_logits))))
-                decode_logits_weighted = tf.multiply(decode_logits, inverse_class_weights)
-
-                loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-                    logits=decode_logits_weighted, labels=tf.squeeze(binary_label, squeeze_dims=[3]),
-                    name='entropy_loss')
-
-                binary_segmenatation_loss = tf.reduce_mean(loss)
-
-            else:
-                # 计算二值分割损失函数
-                binary_label_plain = tf.reshape(
-                    binary_label,
-                    shape=[binary_label.get_shape().as_list()[0] *
-                           binary_label.get_shape().as_list()[1] *
-                           binary_label.get_shape().as_list()[2]])
-                # 加入class weights
-                unique_labels, unique_id, counts = tf.unique_with_counts(binary_label_plain)
-                counts = tf.cast(counts, tf.float32)
-                inverse_weights = tf.divide(1.0,
-                                            tf.log(tf.add(tf.divide(tf.constant(1.0), counts),
-                                                          tf.constant(1.02))))
-                inverse_weights = tf.gather(inverse_weights, binary_label)
-                binary_segmenatation_loss = tf.losses.sparse_softmax_cross_entropy(
-                    labels=binary_label, logits=decode_logits, weights=inverse_weights)
-                binary_segmenatation_loss = tf.reduce_mean(binary_segmenatation_loss)
+            # if self._net_flag.lower() == 'enet':
+            #     # 加入bounded inverse class weights
+            #     inverse_class_weights = tf.divide(1.0,
+            #                                       tf.log(tf.add(tf.constant(1.02, tf.float32),
+            #                                                     tf.nn.softmax(decode_logits))))
+            #     decode_logits_weighted = tf.multiply(decode_logits, inverse_class_weights)
+            #
+            #     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            #         logits=decode_logits_weighted, labels=tf.squeeze(binary_label, squeeze_dims=[3]),
+            #         name='entropy_loss')
+            #
+            #     binary_segmenatation_loss = tf.reduce_mean(loss)
+            #
+            # else:
+            # 计算二值分割损失函数
+            binary_label_plain = tf.reshape(
+                binary_label,
+                shape=[binary_label.get_shape().as_list()[0] *
+                       binary_label.get_shape().as_list()[1] *
+                       binary_label.get_shape().as_list()[2]])
+            # 加入class weights
+            unique_labels, unique_id, counts = tf.unique_with_counts(binary_label_plain)
+            counts = tf.cast(counts, tf.float32)
+            # inverse_weights = tf.divide(1.0,
+            #                             tf.log(tf.add(tf.divide(tf.constant(1.0), counts),
+            #                                           tf.constant(1.02))))
+            inverse_weights = [1.0, weight]
+            inverse_weights = tf.gather(inverse_weights, binary_label)
+            binary_segmenatation_loss = tf.losses.sparse_softmax_cross_entropy(
+                labels=binary_label, logits=decode_logits, weights=inverse_weights)
+            binary_segmenatation_loss = tf.reduce_mean(binary_segmenatation_loss)
 
             # 计算discriminative loss损失函数
             # 像素嵌入
@@ -170,12 +171,12 @@ class LaneNet(cnn_basenet.CNNBaseModel):
             # 合并损失
             l2_reg_loss = tf.constant(0.0, tf.float32)
             for vv in tf.trainable_variables():
-                if 'bn' in vv.name:
+                if 'bn' in vv.name or 'batchnorm' in vv.name:
                     continue
                 else:
                     l2_reg_loss = tf.add(l2_reg_loss, tf.nn.l2_loss(vv))
             l2_reg_loss *= 0.001
-            total_loss = 1.0 * binary_segmenatation_loss + 0.5 * disc_loss + l2_reg_loss
+            total_loss = 0.5 * binary_segmenatation_loss + 0.5 * disc_loss + l2_reg_loss
 
             ret = {
                 'total_loss': total_loss,
@@ -184,7 +185,6 @@ class LaneNet(cnn_basenet.CNNBaseModel):
                 'binary_seg_loss': binary_segmenatation_loss,
                 'discriminative_loss': disc_loss
             }
-            total_loss.shape = 1
 
             return ret
 
