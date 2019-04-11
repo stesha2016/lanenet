@@ -4,6 +4,6 @@ encoder_decoder_model/*.pyc
 lanenet_model/*.pyc
 config/*.pyc
 data/tusimple_data/
-*.png
+/*.png
 tboard/*
 model/
