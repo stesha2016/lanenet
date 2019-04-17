@@ -26,8 +26,7 @@ with tf.Session() as sess:
         label_pts = label_pts[0]
         print(label_pts)
         image = np.array(image)
-        image.at = 0
-        loss, coefficient = sess.run([c_loss, coef], feed_dict={tensor_in: image, gt_label_pts: label_pts})
+        _, loss, coefficient = sess.run([optimizer, c_loss, coef], feed_dict={tensor_in: image, gt_label_pts: label_pts})
         if epoch % 50 == 0:
             print('epoch[{}], hnet training loss = {}'.format(epoch, loss))
         epoch += 1
@@ -41,6 +40,6 @@ with tf.Session() as sess:
             R[2, 1] = coefficient[5]
             R[2, 2] = 1
             warp_image = cv2.warpPerspective(image[0], R, dsize=(image[0].shape[1], image[0].shape[0]))
-            cv2.imwrite("src.jpg", image[0])
-            cv2.imwrite("ret.jpg", warp_image)
+            cv2.imwrite("src.png", image[0])
+            cv2.imwrite("ret.png", warp_image)
             saver.save(sess=sess, save_path='./model/hnet/hnet', global_step=epoch)

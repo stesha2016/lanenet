@@ -63,20 +63,25 @@ class DataSet(object):
                     lanes = info_dict['lanes']
 
                     lane_pts = []
+                    laneNum = 1
                     for lane in lanes:
                         assert len(h_samples) == len(lane)
+                        count = 0
                         for index in range(len(lane)):
                             if lane[index] == -2:
                                 continue
                             else:
+                                count += 1
                                 ptx = lane[index]
                                 pty = h_samples[index]
-                                ptz = 1
+                                ptz = laneNum
                                 lane_pts.append([ptx, pty, ptz])
-                        if not lane_pts:
-                            continue
-                        if len(lane_pts) <= 3:
-                            continue
+                        if count > 3:
+                            laneNum += 1
+                    if not lane_pts:
+                        continue
+                    if len(lane_pts) <= 3:
+                        continue
                     label_gt_pts.append(lane_pts)
 
         return np.array(label_image_path), np.array(label_gt_pts)
