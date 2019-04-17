@@ -114,7 +114,9 @@ class DataSet(object):
             gt_imgs = []
 
             for gt_img_path in gt_img_list:
-                gt_imgs.append(cv2.imread(gt_img_path, cv2.IMREAD_COLOR))
+                img = cv2.imread(gt_img_path, cv2.IMREAD_COLOR)
+                img = cv2.resize(img, (128, 64), interpolation=cv2.INTER_LINEAR)
+                gt_imgs.append(img)
 
             self._next_batch_loop_count += 1
             return gt_imgs, gt_pts_list

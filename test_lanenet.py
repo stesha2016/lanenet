@@ -39,7 +39,7 @@ def init_args():
     parser.add_argument('--image_path', type=str, help='The image path or the src image save dir')
     parser.add_argument('--weights_path', type=str, help='The model weights path')
     parser.add_argument('--is_batch', type=str, help='If test a batch of images', default='false')
-    parser.add_argument('--batch_size', type=int, help='The batch size of the test images', default=32)
+    parser.add_argument('--batch_size', type=int, help='The batch size of the test images', default=8)
     parser.add_argument('--save_dir', type=str, help='Test result image save dir', default=None)
     parser.add_argument('--use_gpu', type=int, help='If use gpu set 1 or 0 instead', default=1)
 
@@ -79,9 +79,9 @@ def test_lanenet(image_path, weights_path, use_gpu):
     log.info('图像读取完毕, 耗时: {:.5f}s'.format(time.time() - t_start))
 
     input_tensor = tf.placeholder(dtype=tf.float32, shape=[1, 256, 512, 3], name='input_tensor')
-    phase_tensor = tf.constant('test', tf.string)
+    phase_tensor = tf.constant(False, tf.bool)
 
-    net = lanenet_merge_model.LaneNet(phase=phase_tensor, net_flag='vgg')
+    net = lanenet_merge_model.LaneNet(phase=phase_tensor, net_flag='enet')
     binary_seg_ret, instance_seg_ret = net.inference(input_tensor=input_tensor, name='lanenet_model')
 
     cluster = lanenet_cluster.LaneNetCluster()
@@ -103,30 +103,31 @@ def test_lanenet(image_path, weights_path, use_gpu):
     with sess.as_default():
 
         saver.restore(sess=sess, save_path=weights_path)
+        for i in range(1):
+            t_start = time.time()
+            binary_seg_image, instance_seg_image = sess.run([binary_seg_ret, instance_seg_ret],
+                                                            feed_dict={input_tensor: [image]})
+            t_cost = time.time() - t_start
+            log.info('单张图像车道线预测耗时: {:.5f}s'.format(t_cost))
 
+        # 删除一些比较小的联通区域
+        # binary_seg_image[0] = postprocessor.postprocess(binary_seg_image[0])
         t_start = time.time()
-        binary_seg_image, instance_seg_image = sess.run([binary_seg_ret, instance_seg_ret],
-                                                        feed_dict={input_tensor: [image]})
-        t_cost = time.time() - t_start
-        log.info('单张图像车道线预测耗时: {:.5f}s'.format(t_cost))
-
-        binary_seg_image[0] = postprocessor.postprocess(binary_seg_image[0])
         mask_image = cluster.get_lane_mask(binary_seg_ret=binary_seg_image[0],
                                            instance_seg_ret=instance_seg_image[0])
+        t_cost = time.time() - t_start
+        log.info('单张图像车道线聚类耗时: {:.5f}s'.format(t_cost))
 
+        print(instance_seg_image.shape)
         for i in range(4):
             instance_seg_image[0][:, :, i] = minmax_scale(instance_seg_image[0][:, :, i])
         embedding_image = np.array(instance_seg_image[0], np.uint8)
 
-        plt.figure('mask_image')
-        plt.imshow(mask_image[:, :, (2, 1, 0)])
-        plt.figure('src_image')
-        plt.imshow(image_vis[:, :, (2, 1, 0)])
-        plt.figure('instance_image')
-        plt.imshow(embedding_image[:, :, (2, 1, 0)])
-        plt.figure('binary_image')
-        plt.imshow(binary_seg_image[0] * 255, cmap='gray')
-        plt.show()
+        cv2.imwrite('./out/out_bin_img.png', binary_seg_image[0] * 255)
+        cv2.imwrite('./out/out_mask_img.png', mask_image)
+        cv2.imwrite('./out/out_ori_img.png', image_vis)
+        cv2.imwrite('./out/out_ins_img.png', embedding_image)
+
 
     sess.close()
 

@@ -36,8 +36,7 @@ def hnet_loss(gt_pts, transformation_coeffcient, name):
         Y_One = tf.add(tf.subtract(Y, Y), tf.constant(1.0, tf.float32))
         Y_stack = tf.stack([tf.pow(Y, 3), tf.pow(Y, 2), Y, Y_One], axis=1)
         w = tf.matmul(tf.matmul(tf.matrix_inverse(tf.matmul(tf.transpose(Y_stack), Y_stack)),
-                                tf.transpose(Y_stack)),
-                      tf.expand_dims(X, -1))
+                                tf.transpose(Y_stack)), tf.expand_dims(X, -1))
         # 利用二阶多项式参数求解拟合位置并反算到原始投影空间计算损失
         x_preds = tf.matmul(Y_stack, w)
         preds = tf.transpose(tf.stack([tf.squeeze(x_preds, -1), Y, Y_One], axis=1))

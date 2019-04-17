@@ -7,3 +7,5 @@ data/tusimple_data/
 /*.png
 tboard/*
 model/
+out/
+test.py

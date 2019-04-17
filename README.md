@@ -158,9 +158,20 @@ script on your own.
  * stage1: 60k epochs, accuracy about 92%.
  * stage2: 2k epochs, restore from stage1 decay learning rate to 10%, accuracy about 95%.
 
+## Command
+ * test
+ ```
+ python test_lanenet.py --image_path ./data/tusimple_data/training/gt_image/0001.png --weights_path ./model/tusimple_lanenet/tusimple_lanenet_enet_2019-04-16-14-10-07.ckpt-0
+ ```
+ * train
+ ```
+ python train_lanenet.py --net enet --dataset_dir ./data/tusimple_data/training/ --weights_path ./model/tusimple_lanenet/tusimple_lanenet_enet_2019-04-16-13-36-00.ckpt-2000
+
+ ```
+
 ## TODO
-- [ ] Add Enet backbone for encoder and decoder.
-- [ ] Add Enet binary and instance loss.
+- [x] Add Enet backbone for encoder and decoder.
+- [x] Add Enet binary and instance loss.
 - [x] Training the model on different dataset
 - ~~[ ] Adjust the lanenet hnet model and merge the hnet model to the main lanenet model~~
 - [ ] Change the normalization function from BN to GN

@@ -10,7 +10,6 @@
 """
 import numpy as np
 import glog as log
-import matplotlib.pyplot as plt
 from sklearn.cluster import MeanShift
 from sklearn.cluster import DBSCAN
 import time
@@ -50,20 +49,20 @@ class LaneNetCluster(object):
         :return:
         """
         ms = MeanShift(bandwidth, bin_seeding=True)
-        # log.info('开始Mean shift聚类 ...')
+        log.info('开始Mean shift聚类 ...')
         tic = time.time()
         try:
             ms.fit(prediction)
         except ValueError as err:
             log.error(err)
             return 0, [], []
-        # log.info('Mean Shift耗时: {:.5f}s'.format(time.time() - tic))
+        log.info('Mean Shift耗时: {:.5f}s'.format(time.time() - tic))
         labels = ms.labels_
         cluster_centers = ms.cluster_centers_
 
         num_clusters = cluster_centers.shape[0]
 
-        # log.info('聚类簇个数为: {:d}'.format(num_clusters))
+        log.info('聚类簇个数为: {:d}'.format(num_clusters))
 
         return num_clusters, labels, cluster_centers
 
@@ -93,6 +92,7 @@ class LaneNetCluster(object):
         :param instance_seg_ret:
         :return:
         """
+        print(binary_seg_ret.shape, instance_seg_ret.shape)
         idx = np.where(binary_seg_ret == 1)
 
         lane_embedding_feats = []
@@ -100,7 +100,7 @@ class LaneNetCluster(object):
         for i in range(len(idx[0])):
             lane_embedding_feats.append(instance_seg_ret[idx[0][i], idx[1][i]])
             lane_coordinate.append([idx[0][i], idx[1][i]])
-
+        print(len(idx[0]))
         return np.array(lane_embedding_feats, np.float32), np.array(lane_coordinate, np.int64)
 
     @staticmethod
@@ -134,14 +134,14 @@ class LaneNetCluster(object):
         with warnings.catch_warnings():
             warnings.filterwarnings('error')
             try:
-                f1 = np.polyfit(x, y, 3)
+                f1 = np.polyfit(y, x, 3)
                 p1 = np.poly1d(f1)
-                x_min = int(np.min(x))
-                x_max = int(np.max(x))
-                x_fit = []
-                for i in range(x_min, x_max + 1):
-                    x_fit.append(i)
-                y_fit = p1(x_fit)
+                y_min = int(np.min(y))
+                y_max = int(np.max(y))
+                y_fit = []
+                for i in range(y_min, y_max + 1):
+                    y_fit.append(i)
+                x_fit = p1(y_fit)
             except Warning as e:
                 x_fit = x
                 y_fit = y
@@ -157,7 +157,9 @@ class LaneNetCluster(object):
         """
         lane_embedding_feats, lane_coordinate = self._get_lane_area(binary_seg_ret, instance_seg_ret)
 
-        num_clusters, labels, cluster_centers = self._cluster(lane_embedding_feats, bandwidth=1.5)
+        num_clusters, labels, cluster_centers = self._cluster(lane_embedding_feats, bandwidth=4.0)
+        print(num_clusters)
+        print(cluster_centers)
 
         # 聚类簇超过八个则选择其中类内样本最多的八个聚类簇保留下来
         if num_clusters > 8:
@@ -170,19 +172,20 @@ class LaneNetCluster(object):
             cluster_index = range(num_clusters)
 
         mask_image = np.zeros(shape=[binary_seg_ret.shape[0], binary_seg_ret.shape[1], 3], dtype=np.uint8)
-
+        print(mask_image.shape)
+        print(cluster_index)
         for index, i in enumerate(cluster_index):
             idx = np.where(labels == i)
+            print(len(idx[0]))
             coord = lane_coordinate[idx]
-            # coord = self._thresh_coord(coord)
-            coord = np.flip(coord, axis=1)
-            # coord = (coord[:, 0], coord[:, 1])
             color = (int(self._color_map[index][0]),
                      int(self._color_map[index][1]),
                      int(self._color_map[index][2]))
-            coord = np.array([coord])
-            cv2.polylines(img=mask_image, pts=coord, isClosed=False, color=color, thickness=2)
-            # mask_image[coord] = color
+            #coord = np.array(self._lane_fit(np.array(coord))).astype(dtype=np.uint8)
+            coord = np.array(coord)
+            mask_image[coord[:,0], coord[:,1], :] = color
+            # coord = np.flip(coord, axis=1)
+            # cv2.polylines(img=mask_image, pts=np.int32([coord]), isClosed=False, color=color, thickness=2)
 
         return mask_image
 
@@ -201,8 +204,3 @@ if __name__ == '__main__':
     embedding_image = np.array(instance_seg_image, np.uint8)
     cluster = LaneNetCluster()
     mask_image = cluster.get_lane_mask(instance_seg_ret=instance_seg_image, binary_seg_ret=binary_seg_image)
-    plt.figure('embedding')
-    plt.imshow(embedding_image[:, :, (2, 1, 0)])
-    plt.figure('mask_image')
-    plt.imshow(mask_image[:, :, (2, 1, 0)])
-    plt.show()

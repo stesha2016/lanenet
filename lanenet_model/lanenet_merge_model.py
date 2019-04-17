@@ -137,7 +137,7 @@ class LaneNet(cnn_basenet.CNNBaseModel):
             inverse_weights = tf.divide(1.0,
                                         tf.log(tf.add(tf.divide(tf.constant(1.0), counts),
                                                       tf.constant(1.02))))
-            inverse_weights = tf.concat([tf.constant([1.]), inverse_weights[1:]], axis=0)
+            inverse_weights = tf.concat([tf.constant([5.]), inverse_weights[1:]], axis=0)
             inverse_weights = tf.gather(inverse_weights, binary_label)
             binary_segmenatation_loss = tf.losses.sparse_softmax_cross_entropy(
                 labels=binary_label, logits=decode_logits, weights=inverse_weights)
@@ -164,6 +164,7 @@ class LaneNet(cnn_basenet.CNNBaseModel):
                     l2_reg_loss = tf.add(l2_reg_loss, tf.nn.l2_loss(vv))
             l2_reg_loss *= 0.001
             total_loss = 0.5 * binary_segmenatation_loss + 0.5 * disc_loss + l2_reg_loss
+            # total_loss = binary_segmenatation_loss
 
             ret = {
                 'total_loss': total_loss,

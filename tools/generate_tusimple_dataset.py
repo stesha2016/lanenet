@@ -43,9 +43,11 @@ def process_json_file(json_file_path, src_dir, ori_dst_dir, binary_dst_dir, inst
     assert ops.exists(json_file_path), '{:s} not exist'.format(json_file_path)
 
     image_nums = len(os.listdir(ori_dst_dir))
+    count_unlabeled = 0
 
     with open(json_file_path, 'r') as file:
         for line_index, line in enumerate(file):
+            labeled = True
             info_dict = json.loads(line)
 
             image_path = ops.join(src_dir, info_dict['raw_file'])
@@ -73,15 +75,20 @@ def process_json_file(json_file_path, src_dir, ori_dst_dir, binary_dst_dir, inst
                         lane_x.append(ptx)
                         lane_y.append(pty)
                 if not lane_x:
+                    labeled = False
                     continue
                 lane_pts = np.vstack((lane_x, lane_y)).transpose()
                 lane_pts = np.array([lane_pts], np.int64)
 
                 cv2.polylines(dst_binary_image, lane_pts, isClosed=False,
-                              color=255, thickness=5)
+                              color=255, thickness=2)
                 cv2.polylines(dst_instance_image, lane_pts, isClosed=False,
-                              color=lane_index * 50 + 20, thickness=5)
+                              color=lane_index * 50 + 20, thickness=6)
 
+            if not labeled:
+                print('{} image has lane not labeled'.format(image_path))
+                count_unlabeled += 1
+                continue
             dst_binary_image_path = ops.join(binary_dst_dir, image_name_new)
             dst_instance_image_path = ops.join(instance_dst_dir, image_name_new)
             dst_rgb_image_path = ops.join(ori_dst_dir, image_name_new)
@@ -91,6 +98,7 @@ def process_json_file(json_file_path, src_dir, ori_dst_dir, binary_dst_dir, inst
             cv2.imwrite(dst_rgb_image_path, src_image)
 
             print('Process {:s} success'.format(image_path))
+        print(count_unlabeled, 'has not labeled lane')
 
 
 def gen_train_sample(src_dir, b_gt_image_dir, i_gt_image_dir, image_dir):

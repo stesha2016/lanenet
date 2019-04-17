@@ -296,7 +296,7 @@ def train_net(dataset_dir, weights_path=None, net_flag='vgg'):
             #                     np.mean(val_cost_time_mean)))
             #     val_cost_time_mean = []
 
-            if epoch % 2000 == 0:
+            if epoch % 1000 == 0:
                 saver.save(sess=sess, save_path=model_save_path, global_step=epoch)
     sess.close()
 
