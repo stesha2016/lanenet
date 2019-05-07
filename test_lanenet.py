@@ -113,7 +113,7 @@ def test_lanenet(image_path, weights_path, use_gpu):
         # 删除一些比较小的联通区域
         # binary_seg_image[0] = postprocessor.postprocess(binary_seg_image[0])
         t_start = time.time()
-        mask_image = cluster.get_lane_mask(binary_seg_ret=binary_seg_image[0],
+        mask_image, _, _, _ = cluster.get_lane_mask(binary_seg_ret=binary_seg_image[0],
                                            instance_seg_ret=instance_seg_image[0])
         t_cost = time.time() - t_start
         log.info('单张图像车道线聚类耗时: {:.5f}s'.format(t_cost))

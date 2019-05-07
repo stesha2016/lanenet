@@ -57,8 +57,6 @@ class DataSet(object):
                     image_path = ops.join(src_dir, info_dict['raw_file'])
                     assert ops.exists(image_path), '{:s} not exist'.format(image_path)
 
-                    label_image_path.append(image_path)
-
                     h_samples = info_dict['h_samples']
                     lanes = info_dict['lanes']
 
@@ -80,10 +78,11 @@ class DataSet(object):
                             laneNum += 1
                     if not lane_pts:
                         continue
-                    if len(lane_pts) <= 3:
+                    if len(lane_pts) <= 90:
+                        print('ignore len of pts is ', len(lane_pts))
                         continue
-                    label_gt_pts.append(lane_pts)
-
+                    label_gt_pts.append(lane_pts[0:80])
+                    label_image_path.append(image_path)
         return np.array(label_image_path), np.array(label_gt_pts)
 
     def _random_dataset(self):

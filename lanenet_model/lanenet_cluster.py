@@ -158,8 +158,6 @@ class LaneNetCluster(object):
         lane_embedding_feats, lane_coordinate = self._get_lane_area(binary_seg_ret, instance_seg_ret)
 
         num_clusters, labels, cluster_centers = self._cluster(lane_embedding_feats, bandwidth=4.0)
-        print(num_clusters)
-        print(cluster_centers)
 
         # 聚类簇超过八个则选择其中类内样本最多的八个聚类簇保留下来
         if num_clusters > 8:
@@ -172,8 +170,6 @@ class LaneNetCluster(object):
             cluster_index = range(num_clusters)
 
         mask_image = np.zeros(shape=[binary_seg_ret.shape[0], binary_seg_ret.shape[1], 3], dtype=np.uint8)
-        print(mask_image.shape)
-        print(cluster_index)
         for index, i in enumerate(cluster_index):
             idx = np.where(labels == i)
             print(len(idx[0]))
@@ -181,13 +177,10 @@ class LaneNetCluster(object):
             color = (int(self._color_map[index][0]),
                      int(self._color_map[index][1]),
                      int(self._color_map[index][2]))
-            #coord = np.array(self._lane_fit(np.array(coord))).astype(dtype=np.uint8)
             coord = np.array(coord)
             mask_image[coord[:,0], coord[:,1], :] = color
-            # coord = np.flip(coord, axis=1)
-            # cv2.polylines(img=mask_image, pts=np.int32([coord]), isClosed=False, color=color, thickness=2)
 
-        return mask_image
+        return mask_image, lane_coordinate, cluster_index, labels
 
 
 if __name__ == '__main__':

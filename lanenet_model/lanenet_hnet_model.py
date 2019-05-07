@@ -24,18 +24,9 @@ class LaneNetHNet(cnn_basenet.CNNBaseModel):
         :param phase:
         """
         super(LaneNetHNet, self).__init__()
-        self._train_phase = tf.constant('train', tf.string)
-        self._phase = phase
-        self._is_training = self._init_phase()
+        self._is_training = phase
 
         return
-
-    def _init_phase(self):
-        """
-
-        :return:
-        """
-        return tf.equal(self._phase, self._train_phase)
 
     def _conv_stage(self, inputdata, out_channel, name):
         """
@@ -70,9 +61,9 @@ class LaneNetHNet(cnn_basenet.CNNBaseModel):
             conv_stage_6 = self._conv_stage(inputdata=conv_stage_5, out_channel=64, name='conv_stage_6')
             maxpool_3 = self.maxpooling(inputdata=conv_stage_6, kernel_size=2, stride=2, name='maxpool_3')
             fc = self.fullyconnect(inputdata=maxpool_3, out_dim=1024, use_bias=False, name='fc')
-            fc_relu = self.relu(inputdata=fc, name='fc_relu')
-            output = self.fullyconnect(inputdata=fc_relu, out_dim=6, use_bias=False, name='fc_output')
-            output = self.squeeze(inputdata=output, axis=0)
+            bn = self.layerbn(inputdata=fc, is_training=self._is_training, name='bn')
+            fc_relu = self.relu(inputdata=bn, name='fc_relu')
+            output = self.fullyconnect(inputdata=fc_relu, out_dim=6, name='fc_output')
 
         return output
 
@@ -85,14 +76,16 @@ class LaneNetHNet(cnn_basenet.CNNBaseModel):
         :return:
         """
         with tf.variable_scope(name):
+            pre_H = tf.constant([-2.04925811e-01, -3.10124824e+00, 7.99432771e+01, -1.82534341e+00, 4.17707601e+01, -4.67428173e-02], shape=[6,], dtype=tf.float32)
             transformation_coefficient = self._build_model(input_tensor, name='transfomation_coefficient')
+            pre_loss = tf.reduce_mean(tf.norm(transformation_coefficient - pre_H))
             loss = lanenet_hnet_loss.hnet_loss(gt_pts=gt_label_pts,
                                                transformation_coeffcient=transformation_coefficient,
                                                name='hnet_loss')
 
-            return loss, transformation_coefficient
+            return loss, transformation_coefficient, pre_loss
 
-    def inference(self, input_tensor, name):
+    def inference(self, input_tensor, gt_label_pts, name):
         """
 
         :param input_tensor:
@@ -100,7 +93,8 @@ class LaneNetHNet(cnn_basenet.CNNBaseModel):
         :return:
         """
         with tf.variable_scope(name):
-            return self._build_model(input_tensor, name='transfomation_coefficient')
+            ceof = self._build_model(input_tensor, name='transfomation_coefficient')
+            return lanenet_hnet_loss.hnet_transformation(gt_label_pts, ceof, 'inference')
 
 
 if __name__ == '__main__':
