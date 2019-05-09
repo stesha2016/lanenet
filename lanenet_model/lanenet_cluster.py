@@ -148,7 +148,7 @@ class LaneNetCluster(object):
             finally:
                 return zip(x_fit, y_fit)
 
-    def get_lane_mask(self, binary_seg_ret, instance_seg_ret):
+    def get_lane_mask(self, binary_seg_ret, instance_seg_ret, gt_image):
         """
 
         :param binary_seg_ret:
@@ -169,7 +169,8 @@ class LaneNetCluster(object):
         else:
             cluster_index = range(num_clusters)
 
-        mask_image = np.zeros(shape=[binary_seg_ret.shape[0], binary_seg_ret.shape[1], 3], dtype=np.uint8)
+        # mask_image = np.zeros(shape=[binary_seg_ret.shape[0], binary_seg_ret.shape[1], 3], dtype=np.uint8)
+        mask_image = np.copy(gt_image)
         for index, i in enumerate(cluster_index):
             idx = np.where(labels == i)
             print(len(idx[0]))

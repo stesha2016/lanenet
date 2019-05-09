@@ -144,35 +144,3 @@ def test():
 
 if __name__ == '__main__':
     test()
-    # gt_labels = tf.constant([[[1.0, 1.0, 1.0], [2.0, 2.0, 1.0], [3.0, 3.0, 1.0]],
-    #                          [[1.0, 1.0, 1.0], [2.0, 2.0, 1.0], [3.0, 3.0, 1.0]]],
-    #                         dtype=tf.float32, shape=[6, 3])
-    # transformation_coffecient = tf.constant([[0.58348501, -0.79861236, 2.30343866,
-    #                                           -0.09976104, -1.22268307, 2.43086767]],
-    #                                         dtype=tf.float32, shape=[6])
-    #
-    # # import numpy as np
-    # # c_val = [0.58348501, -0.79861236, 2.30343866,
-    # #          -0.09976104, -1.22268307, 2.43086767]
-    # # R = np.zeros([3, 3], np.float32)
-    # # R[0, 0] = c_val[0]
-    # # R[0, 1] = c_val[1]
-    # # R[0, 2] = c_val[2]
-    # # R[1, 1] = c_val[3]
-    # # R[1, 2] = c_val[4]
-    # # R[2, 1] = c_val[5]
-    # # R[2, 2] = 1
-    # #
-    # # print(np.mat(R).I)
-    #
-    # _loss = hnet_loss(gt_labels, transformation_coffecient, 'loss')
-    #
-    # _pred = hnet_transformation(gt_labels, transformation_coffecient, 'inference')
-    #
-    # with tf.Session() as sess:
-    #     sess.run(tf.global_variables_initializer())
-    #
-    #     loss_val = sess.run(_loss)
-    #     pred = sess.run(_pred)
-    #     print(loss_val)
-    #     print(pred)

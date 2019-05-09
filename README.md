@@ -78,22 +78,28 @@ file and the original image. The binary segmentation use 255 to represent the la
 instance use different pixel value to represent different lane field and 0 for the rest.
 
 All your training image will be scaled into the same scale according to the config file.
+```angular2html
+python tools/generate_tusimple_dataset.py --src_dir path/to/your/unzipped/file
+```
 
 #### Train model
+#### LaneNet
 In my experiment the training epochs are 200000, batch size is 8, initialized learning rate is 0.0005 and decrease by 
-multiply 0.1 every 100000 epochs. About training parameters you can check the global_configuration/config.py for details. 
+multiply 0.1 every 100000 epochs. About training parameters you can check the config/global_config.py for details. 
 You can switch --net argument to change the base encoder stage. If you choose --net vgg then the vgg16 will be used as 
 the base encoder stage and a pretrained parameters will be loaded and if you choose --net dense then the dense net will 
 be used as the base encoder stage instead and no pretrained parameters will be loaded. And you can modified the training 
 script to load your own pretrained parameters or you can implement your own base encoder stage. 
+ * [Modify] Add UNET backbone as mentioned in paper. UNet is a real time architecture network.
+ * [Modify] Add gradients clip in case instance loss explored to nan.
 You may call the following script to train your own model
 
 ```
-python tools/train_lanenet.py --net vgg --dataset_dir data/training_data_example/
+python train_lanenet.py --net enet --dataset_dir ./data/tusimple_data/training/
 ```
-You can also continue the training process from the snapshot by
+You can also continue the training process from the ckpt by
 ```
-python tools/train_lanenet.py --net vgg --dataset_dir data/training_data_example/ --weights_path path/to/your/last/checkpoint
+python train_lanenet.py --net enet --dataset_dir ./data/tusimple_data/training/ --weights_path ./model/lanenet/tusimple_lanenet_enet_2019-04-16-13-36-00.ckpt-2000
 ```
 
 You may monitor the training process using tensorboard tools
@@ -106,6 +112,23 @@ The `Binary Segmentation loss` drops as follows:
 
 The `Instance Segmentation loss` drops as follows:  
 ![Training instance_seg_loss](/data/source_image/instance_seg_loss.png)
+
+#### HNet
+Training HNet from scratch we have two steps:
+ * Training Hnet pre-loss for H matrix to an initialized value.
+ ```angular2html
+ python hnet_train.py --phase pretrain
+
+```
+ ```angular2html
+ python hnet_train.py --phase pretrain --pre_hnet_weights ./model/hnet/pre_hnet-9999
+
+```
+ * Training Hnet loss to fine tuning H matrix from an initialized value.
+  ```angular2html
+ python hnet_train.py --phase train --pre_hnet_weights ./model/hnet/pre_hnet-9999
+
+```
 
 ## Experiment
 The accuracy during training process rises as follows: 
@@ -132,41 +155,10 @@ git pull origin master
 The rest are just the same as which mentioned above. And recently I will 
 release a new model trained on culane dataset.
 
-## Recently updates 2018.12.13
-Since a lot of user want a automatic tools to generate the training samples
-from the Tusimple Dataset. I upload the tools I use to generate the training
-samples. You need to firstly download the Tusimple dataset and unzip the 
-file to your local disk. Then run the following command to generate the 
-training samples and the train.txt file.
-
-```angular2html
-python tools/generate_tusimple_dataset.py --src_dir path/to/your/unzipped/file
-```
-
-The script will make the train folder and the test folder. The training 
-samples of origin rgb image, binary label image, instance label image will
-be automatically generated in the training/gt_image, training/gt_binary_image,
-training/gt_instance_image folder.You may check it yourself before start
-the training process.
-
-Pay attention that the script only process the training samples and you 
-need to select several lines from the train.txt to generate your own 
-val.txt file. In order to obtain the test images you can modify the 
-script on your own.
-
-## Training process
- * stage1: 60k epochs, accuracy about 92%.
- * stage2: 2k epochs, restore from stage1 decay learning rate to 10%, accuracy about 95%.
-
 ## Command
  * test
  ```
  python test_lanenet.py --image_path ./data/tusimple_data/training/gt_image/0001.png --weights_path ./model/tusimple_lanenet/tusimple_lanenet_enet_2019-04-16-14-10-07.ckpt-0
- ```
- * train
- ```
- python train_lanenet.py --net enet --dataset_dir ./data/tusimple_data/training/ --weights_path ./model/tusimple_lanenet/tusimple_lanenet_enet_2019-04-16-13-36-00.ckpt-2000
-
  ```
 
 ## TODO

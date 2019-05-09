@@ -78,7 +78,7 @@ class LaneNetHNet(cnn_basenet.CNNBaseModel):
         with tf.variable_scope(name):
             pre_H = tf.constant([-2.04925811e-01, -3.10124824e+00, 7.99432771e+01, -1.82534341e+00, 4.17707601e+01, -4.67428173e-02], shape=[6,], dtype=tf.float32)
             transformation_coefficient = self._build_model(input_tensor, name='transfomation_coefficient')
-            pre_loss = tf.reduce_mean(tf.norm(transformation_coefficient - pre_H))
+            pre_loss = tf.reduce_mean(tf.norm((transformation_coefficient - pre_H) / pre_H))
             loss = lanenet_hnet_loss.hnet_loss(gt_pts=gt_label_pts,
                                                transformation_coeffcient=transformation_coefficient,
                                                name='hnet_loss')

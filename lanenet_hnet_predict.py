@@ -64,6 +64,7 @@ def predict_lanenet(gt_image, lanenet_weights):
     :param lanenet_weights:
     :return:
     """
+    lanenet_image = gt_image - VGG_MEAN
     # Step1, predict from lanenet
     input_tensor = tf.placeholder(dtype=tf.float32, shape=[1, 256, 512, 3], name='input_tensor')
     phase_tensor = tf.constant(False, tf.bool)
@@ -86,7 +87,7 @@ def predict_lanenet(gt_image, lanenet_weights):
         saver.restore(sess=sess, save_path=lanenet_weights)
         t_start = time.time()
         binary_seg_image, instance_seg_image = sess.run([binary_seg_ret, instance_seg_ret],
-                                                        feed_dict={input_tensor: [gt_image]})
+                                                        feed_dict={input_tensor: [lanenet_image]})
         t_cost = time.time() - t_start
         log.info('单张图像车道线预测耗时: {:.5f}s'.format(t_cost))
 
@@ -94,7 +95,7 @@ def predict_lanenet(gt_image, lanenet_weights):
         mask = np.random.randn(binary_seg_image[0].shape[0], binary_seg_image[0].shape[1]) > 0.5
         bi = binary_seg_image[0] * mask
         mask_image, lane_coordinate, cluster_index, labels = cluster.get_lane_mask(binary_seg_ret=bi,
-                                           instance_seg_ret=instance_seg_image[0])
+                                           instance_seg_ret=instance_seg_image[0], gt_image=gt_image)
         t_cost = time.time() - t_start
         log.info('单张图像车道线聚类耗时: {:.5f}s'.format(t_cost))
 
@@ -104,7 +105,7 @@ def predict_lanenet(gt_image, lanenet_weights):
         embedding_image = np.array(instance_seg_image[0], np.uint8)
 
         cv2.imwrite('./out/predict_binary.png', binary_seg_image[0] * 255)
-        cv2.imwrite('./out/predict_mask.png', mask_image)
+        cv2.imwrite('./out/predict_lanenet.png', mask_image)
         cv2.imwrite('./out/predict_instance.png', embedding_image)
 
 
@@ -151,17 +152,15 @@ def predict(image_path, lanenet_weights, hnet_weights):
     log.info('开始读取图像数据并进行预处理')
     t_start = time.time()
     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
-    image_vis = image
 
-    image_lannet = cv2.resize(image, (512, 256), interpolation=cv2.INTER_LINEAR)
-    image_lannet = image_lannet - VGG_MEAN
+    image_vis = cv2.resize(image, (512, 256), interpolation=cv2.INTER_LINEAR)
+    cv2.imwrite('./out/origin_image.png', image_vis)
 
     image_hnet = cv2.resize(image, (128, 64), interpolation=cv2.INTER_LINEAR)
     log.info('图像读取完毕, 耗时: {:.5f}s'.format(time.time() - t_start))
-    cv2.imwrite('./out/origin_image.png', image_vis)
 
     # step1: predict from lanenet model
-    lane_coordinate, cluster_index, labels = predict_lanenet(image_lannet, lanenet_weights)
+    lane_coordinate, cluster_index, labels = predict_lanenet(image_vis, lanenet_weights)
     tf.reset_default_graph()
 
     # step2: fit from hnet model
@@ -170,7 +169,7 @@ def predict(image_path, lanenet_weights, hnet_weights):
         idx = np.where(labels == i)
         coord = lane_coordinate[idx]
         lanes_pts.append(coord)
-    mask_image = hnet_predict(image_hnet, hnet_weights, lanes_pts, image)
+    mask_image = hnet_predict(image_hnet, hnet_weights, lanes_pts, image_vis)
     cv2.imwrite('./out/predict_hnet.png', mask_image)
 
 if __name__ == '__main__':
