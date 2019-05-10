@@ -118,7 +118,7 @@ def hnet_predict(gt_image, hnet_weights, lanes_pts, image):
     lane_pts_tensor = tf.placeholder(dtype=tf.float32, shape=[None, 3], name='lane_pts')
 
     net = lanenet_hnet_model.LaneNetHNet(phase=tf.constant(False, tf.bool))
-    coef_transform_back = net.inference(input_tensor, lane_pts_tensor, name='hnet')
+    coef_transform_back, H = net.inference(input_tensor, lane_pts_tensor, name='hnet')
 
     saver = tf.train.Saver()
 
@@ -135,7 +135,9 @@ def hnet_predict(gt_image, hnet_weights, lanes_pts, image):
         for i in range(len(lanes_pts)):
             lane_pts = np.ones(shape=(len(lanes_pts[i]), 3))
             lane_pts[:, 0:2] = lanes_pts[i]
-            coefficient_back = sess.run(coef_transform_back, feed_dict={input_tensor: [gt_image], lane_pts_tensor:lane_pts})
+            coefficient_back, H_matrix = sess.run([coef_transform_back, H], feed_dict={input_tensor: [gt_image], lane_pts_tensor:lane_pts})
+            warped = cv2.warpPerspective(gt_image, H_matrix, (512, 256), flags=cv2.INTER_LINEAR)
+            cv2.imwrite('./out/warped.png', warped)
             print(coefficient_back.shape[1])
             for j in range(coefficient_back.shape[1]):
                 color = color_map[i]
