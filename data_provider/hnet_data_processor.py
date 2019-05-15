@@ -30,6 +30,7 @@ class DataSet(object):
         :param dataset_info_file: json文件列表
         """
         self._label_image_path, self._label_gt_pts = self._init_dataset(dataset_info_file)
+        print(self._label_gt_pts.shape)
         self._random_dataset()
         self._next_batch_loop_count = 0
 
@@ -60,29 +61,26 @@ class DataSet(object):
                     h_samples = info_dict['h_samples']
                     lanes = info_dict['lanes']
 
-                    lane_pts = []
-                    laneNum = 1
                     for lane in lanes:
                         assert len(h_samples) == len(lane)
+                        lane_pts = []
                         count = 0
                         for index in range(len(lane)):
-                            if lane[index] == -2:
-                                continue
+                            ptx = lane[index]
+                            pty = h_samples[index]
+                            if ptx == -2:
+                                ptz = 0
                             else:
+                                ptz = 1
                                 count += 1
-                                ptx = lane[index]
-                                pty = h_samples[index]
-                                ptz = laneNum
-                                lane_pts.append([ptx, pty, ptz])
-                        if count > 3:
-                            laneNum += 1
-                    if not lane_pts:
-                        continue
-                    if len(lane_pts) <= 90:
-                        print('ignore len of pts is ', len(lane_pts))
-                        continue
-                    label_gt_pts.append(lane_pts[0:80])
-                    label_image_path.append(image_path)
+                            lane_pts.append([ptx, pty, ptz])
+                        # The label of lane pts has two types, len=48 and len=56
+                        if len(lane_pts) == 48:
+                            for k in range(8):
+                                lane_pts.append([0, 0, 0])
+                        if count > 20:
+                            label_gt_pts.append(lane_pts)
+                            label_image_path.append(image_path)
         return np.array(label_image_path), np.array(label_gt_pts)
 
     def _random_dataset(self):

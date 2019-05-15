@@ -41,43 +41,21 @@ def hnet_loss(gt_pts, transformation_coeffcient, name):
 
             lane_pts = tf.transpose(lane_pts)
             lane_trans = tf.matmul(H, lane_pts)
-            lane_trans = lane_trans / lane_trans[2, :]
 
             # 求解最小二乘二阶多项式拟合参数矩阵
-            Y = tf.transpose(lane_trans[1, :])
-            X = tf.transpose(lane_trans[0, :])
+            Y = tf.transpose(lane_trans[1, :] / lane_trans[2, :])
+            X = tf.transpose(lane_trans[0, :] / lane_trans[2, :])
             Y_One = tf.ones_like(Y, dtype=tf.float32)
             Y_stack = tf.stack([tf.pow(Y, 3), tf.pow(Y, 2), Y, Y_One], axis=1)
             w = tf.matmul(tf.matmul(tf.matrix_inverse(tf.matmul(tf.transpose(Y_stack), Y_stack)),
                                     tf.transpose(Y_stack)), tf.expand_dims(X, -1))
             # 利用二阶多项式参数求解拟合位置并反算到原始投影空间计算损失
             x_preds = tf.matmul(Y_stack, w)
-            lane_trans_pred = tf.transpose(tf.stack([tf.squeeze(x_preds, -1), Y, Y_One], axis=1))
+            lane_trans_pred = tf.transpose(tf.stack([tf.squeeze(x_preds, -1) * lane_trans[2, :],
+                                                     Y * lane_trans[2, :], lane_trans[2, :]], axis=1))
             lane_trans_back = tf.matmul(tf.matrix_inverse(H), lane_trans_pred)
-            lane_trans_back = lane_trans_back / lane_trans_back[2, :]
 
             loss = tf.reduce_mean(tf.pow(lane_pts[0, :] - lane_trans_back[0, :], 2))
-
-            # lane 2
-            # lane_mask = tf.where(tf.equal(tf.cast(gt_labels[:, 2], tf.int32), 2))
-            # lane_pts = tf.gather(gt_labels, lane_mask)[:, 0, :]
-            #
-            # lane_pts = tf.transpose(lane_pts)
-            # lane_trans = tf.matmul(H, lane_pts)
-            #
-            # # 求解最小二乘二阶多项式拟合参数矩阵
-            # Y = tf.transpose(lane_trans[1, :])
-            # X = tf.transpose(lane_trans[0, :])
-            # Y_One = tf.ones_like(Y, dtype=tf.float32)
-            # Y_stack = tf.stack([tf.pow(Y, 3), tf.pow(Y, 2), Y, Y_One], axis=1)
-            # w = tf.matmul(tf.matmul(tf.matrix_inverse(tf.matmul(tf.transpose(Y_stack), Y_stack)),
-            #                         tf.transpose(Y_stack)), tf.expand_dims(X, -1))
-            # # 利用二阶多项式参数求解拟合位置并反算到原始投影空间计算损失
-            # x_preds = tf.matmul(Y_stack, w)
-            # lane_trans_pred = tf.transpose(tf.stack([tf.squeeze(x_preds, -1), Y, Y_One], axis=1))
-            # lane_trans_back = tf.matmul(tf.matrix_inverse(H), lane_trans_pred)
-
-            # loss += tf.reduce_mean(tf.pow(lane_pts[0, :] - lane_trans_back[0, :], 2))
 
             output_loss = output_loss.write(i, loss)
             return i + 1, labels_tensor, coeffcient, output_loss
@@ -109,11 +87,10 @@ def hnet_transformation(gt_pts, transformation_coeffcient, name):
 
         gt_pts = tf.transpose(gt_pts)
         pts_projects = tf.matmul(H, gt_pts)
-        pts_projects = pts_projects / pts_projects[2, :]
 
         # 求解最小二乘二阶多项式拟合参数矩阵
-        Y = tf.transpose(pts_projects[1, :])
-        X = tf.transpose(pts_projects[0, :])
+        Y = tf.transpose(pts_projects[1, :] / pts_projects[2, :])
+        X = tf.transpose(pts_projects[0, :] / pts_projects[2, :])
         Y_One = tf.ones_like(Y)
         Y_stack = tf.stack([tf.pow(Y, 3), tf.pow(Y, 2), Y, Y_One], axis=1)
         w = tf.matmul(tf.matmul(tf.matrix_inverse(tf.matmul(tf.transpose(Y_stack), Y_stack)),
@@ -121,9 +98,9 @@ def hnet_transformation(gt_pts, transformation_coeffcient, name):
 
         # 利用二阶多项式参数求解拟合位置
         x_preds = tf.matmul(Y_stack, w)
-        preds = tf.transpose(tf.stack([tf.squeeze(x_preds, -1), Y, Y_One], axis=1))
+        preds = tf.transpose(tf.stack([tf.squeeze(x_preds, -1) * pts_projects[2, :],
+                                       Y * pts_projects[2, :], pts_projects[2, :]], axis=1))
         x_transformation_back = tf.matmul(tf.matrix_inverse(H), preds)
-        x_transformation_back = x_transformation_back / x_transformation_back[2, :]
 
     return x_transformation_back
 

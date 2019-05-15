@@ -11,20 +11,21 @@ LaneNet中的HNet模型
 import tensorflow as tf
 
 from encoder_decoder_model import cnn_basenet
-from lanenet_model import lanenet_hnet_loss
+from lanenet_model import hnet_loss
 
 
-class LaneNetHNet(cnn_basenet.CNNBaseModel):
+class HNet(cnn_basenet.CNNBaseModel):
     """
     实现lanenet中的hnet模型
     """
-    def __init__(self, phase):
+    def __init__(self, is_training):
         """
 
         :param phase:
         """
-        super(LaneNetHNet, self).__init__()
-        self._is_training = phase
+        super(HNet, self).__init__()
+        self._is_training = is_training
+        print(self._is_training)
 
         return
 
@@ -50,6 +51,7 @@ class LaneNetHNet(cnn_basenet.CNNBaseModel):
         :param name:
         :return:
         """
+        print(input_tensor)
         with tf.variable_scope(name):
             conv_stage_1 = self._conv_stage(inputdata=input_tensor, out_channel=16, name='conv_stage_1')
             conv_stage_2 = self._conv_stage(inputdata=conv_stage_1, out_channel=16, name='conv_stage_2')
@@ -76,10 +78,10 @@ class LaneNetHNet(cnn_basenet.CNNBaseModel):
         :return:
         """
         with tf.variable_scope(name):
-            pre_H = tf.constant([-2.04925811e-01, -3.10124824e+00, 7.99432771e+01, -1.82534341e+00, 4.17707601e+01, -4.67428173e-02], shape=[6,], dtype=tf.float32)
+            pre_H = tf.constant([-2.04835137e-01, -3.09995252e+00, 7.99098762e+01, -2.94687413e+00, 7.06836681e+01, -4.67392998e-02], shape=[6,], dtype=tf.float32)
             transformation_coefficient = self._build_model(input_tensor, name='transfomation_coefficient')
             pre_loss = tf.reduce_mean(tf.norm((transformation_coefficient - pre_H) / pre_H))
-            loss = lanenet_hnet_loss.hnet_loss(gt_pts=gt_label_pts,
+            loss = hnet_loss.hnet_loss(gt_pts=gt_label_pts,
                                                transformation_coeffcient=transformation_coefficient,
                                                name='hnet_loss')
 
@@ -94,51 +96,5 @@ class LaneNetHNet(cnn_basenet.CNNBaseModel):
         """
         with tf.variable_scope(name):
             ceof = self._build_model(input_tensor, name='transfomation_coefficient')
-            return lanenet_hnet_loss.hnet_transformation(gt_label_pts, ceof, 'inference')
+            return hnet_loss.hnet_transformation(gt_label_pts, ceof, 'inference'), ceof
 
-
-if __name__ == '__main__':
-    tensor_in = tf.placeholder(dtype=tf.float32, shape=[2, 64, 128, 3])
-    gt_label_pts = tf.placeholder(dtype=tf.float32, shape=[None, 3])
-
-    net = LaneNetHNet(phase=tf.constant('train', tf.string))
-    coffe = net.inference(tensor_in, name='hnet')
-    # c_loss = net.compute_loss(tensor_in, gt_label_pts=gt_label_pts, name='hnet')
-
-    saver = tf.train.Saver()
-
-    from data_provider import lanenet_hnet_data_processor
-    import numpy as np
-    import cv2
-    try:
-        from cv2 import cv2
-    except ImportError:
-        pass
-    train_dataset = lanenet_hnet_data_processor.DataSet(
-        ['/media/baidu/Data/Semantic_Segmentation/TUSimple_Lane_Detection/training/label_data_0531.json'])
-
-    with tf.Session() as sess:
-        # sess.run(tf.global_variables_initializer())
-
-        saver.restore(sess=sess,
-                      save_path='../model/tusimple_lanenet_hnet/tusimple_lanenet_hnet_2018-08-08-19-32-01.ckpt-200000')
-
-        image, label_pts = train_dataset.next_batch(1)
-        label_pts = label_pts[0]
-        image = [cv2.resize(tmp, (128, 64), interpolation=cv2.INTER_LINEAR) for tmp in image]
-        c_val = sess.run(coffe, feed_dict={tensor_in: image, gt_label_pts: label_pts})
-        R = np.zeros([3, 3], np.float32)
-        R[0, 0] = c_val[0]
-        R[0, 1] = c_val[1]
-        R[0, 2] = c_val[2]
-        R[1, 1] = c_val[3]
-        R[1, 2] = c_val[4]
-        R[2, 1] = c_val[5]
-        R[2, 2] = 1
-        print(np.mat(R).I)
-        print(R)
-        print(c_val)
-
-        warp_image = cv2.warpPerspective(image[0], R, dsize=(image[0].shape[1], image[0].shape[0]))
-        cv2.imwrite("src.jpg", image[0])
-        cv2.imwrite("ret.jpg", warp_image)

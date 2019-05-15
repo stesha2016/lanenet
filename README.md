@@ -126,7 +126,7 @@ Training HNet from scratch we have two steps:
 ```
  * Training Hnet loss to fine tuning H matrix from an initialized value.
   ```angular2html
- python hnet_train.py --phase train --pre_hnet_weights ./model/hnet/pre_hnet-9999
+ python hnet_train.py --phase train --pre_hnet_weights ./model/hnet/pre_hnet-19999
 
 ```
 

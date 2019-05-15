@@ -16,8 +16,7 @@ import cv2
 from lanenet_model import lanenet_merge_model
 from lanenet_model import lanenet_cluster
 from config import global_config
-from lanenet_model import lanenet_hnet_model
-from lanenet_model import lanenet_hnet_loss
+from lanenet_model import hnet_model
 
 CFG = global_config.cfg
 VGG_MEAN = [103.939, 116.779, 123.68]
@@ -117,7 +116,7 @@ def hnet_predict(gt_image, hnet_weights, lanes_pts, image):
     input_tensor = tf.placeholder(dtype=tf.float32, shape=[1, 64, 128, 3], name='input_tensor')
     lane_pts_tensor = tf.placeholder(dtype=tf.float32, shape=[None, 3], name='lane_pts')
 
-    net = lanenet_hnet_model.LaneNetHNet(phase=tf.constant(False, tf.bool))
+    net = hnet_model.HNet(is_training=False)
     coef_transform_back, H = net.inference(input_tensor, lane_pts_tensor, name='hnet')
 
     saver = tf.train.Saver()
@@ -136,7 +135,17 @@ def hnet_predict(gt_image, hnet_weights, lanes_pts, image):
             lane_pts = np.ones(shape=(len(lanes_pts[i]), 3))
             lane_pts[:, 0:2] = lanes_pts[i]
             coefficient_back, H_matrix = sess.run([coef_transform_back, H], feed_dict={input_tensor: [gt_image], lane_pts_tensor:lane_pts})
-            warped = cv2.warpPerspective(gt_image, H_matrix, (512, 256), flags=cv2.INTER_LINEAR)
+            predict = H_matrix[0]
+            R = np.zeros([3, 3], np.float32)
+            R[0, 0] = predict[0]
+            R[0, 1] = predict[1]
+            R[0, 2] = predict[2]
+            R[1, 1] = predict[3]
+            R[1, 2] = predict[4]
+            R[2, 1] = predict[5]
+            R[2, 2] = 1
+            print(R)
+            warped = cv2.warpPerspective(gt_image, R, (512, 256), flags=cv2.INTER_LINEAR)
             cv2.imwrite('./out/warped.png', warped)
             print(coefficient_back.shape[1])
             for j in range(coefficient_back.shape[1]):
