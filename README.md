@@ -34,25 +34,53 @@ python lanenet_hnet_predict.py --image_path ./data/tusimple_data/training/gt_ima
 ```
 The results are as follows:
 
+* The first example
 `Test Input Image`
 
-![Test Input](/data/tusimple_test_image/0.jpg)
-
-`Test Lane Mask Image`
-
-![Test Lane_Mask](/data/source_image/lanenet_mask_result.png)
+![Test Input](/data/source_image/one/origin_image.png)
 
 `Test Lane Binary Segmentation Image`
 
-![Test Lane_Binary_Seg](/data/source_image/lanenet_binary_seg.png)
+![Test Lane_Binary_Seg](/data/source_image/one/predict_binary.png)
 
 `Test Lane Instance Segmentation Image`
 
-![Test Lane_Instance_Seg](/data/source_image/lanenet_instance_seg.png)
+![Test Lane_Instance_Seg](/data/source_image/one/predict_instance.png)
 
-`Test Lane Instance Embedding Image`
+`Test Lane Clustered Image`
 
-![Test Lane_Embedding](/data/source_image/lanenet_embedding.png)
+![Test Lane_Clustered](/data/source_image/one/predict_lanenet.png)
+
+`Test Hnet Image`
+
+![Test Hnet](/data/source_image/one/predict_hnet.png)
+
+`Test Warped Image`
+
+![Test Warped](/data/source_image/one/warped.png)
+
+* The second example
+![Test Input](/data/source_image/two/origin_image.png)
+
+`Test Lane Binary Segmentation Image`
+
+![Test Lane_Binary_Seg](/data/source_image/two/predict_binary.png)
+
+`Test Lane Instance Segmentation Image`
+
+![Test Lane_Instance_Seg](/data/source_image/two/predict_instance.png)
+
+`Test Lane Clustered Image`
+
+![Test Lane_Clustered](/data/source_image/two/predict_lanenet.png)
+
+`Test Hnet Image`
+
+![Test Hnet](/data/source_image/two/predict_hnet.png)
+
+`Test Warped Image`
+
+![Test Warped](/data/source_image/two/warped.png)
 
 If you want to test the model on a whole dataset you may call
 ```
