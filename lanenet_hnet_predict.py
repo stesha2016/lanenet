@@ -130,11 +130,10 @@ def hnet_predict(gt_image, hnet_weights, lanes_pts, image):
     with tf.Session(config=sess_config) as sess:
         saver.restore(sess=sess, save_path=hnet_weights)
         t_start = time.time()
-        #mask_image = np.zeros(shape=[256, 512, 3], dtype=np.uint8)
         for i in range(len(lanes_pts)):
-            lane_pts = np.ones(shape=(len(lanes_pts[i]), 3))
-            lane_pts[:, 0:2] = lanes_pts[i]
-            coefficient_back, H_matrix = sess.run([coef_transform_back, H], feed_dict={input_tensor: [gt_image], lane_pts_tensor:lane_pts})
+            pts = np.ones(shape=(len(lanes_pts[i]), 3))
+            pts[:, 0:2] = lanes_pts[i]
+            coefficient_back, H_matrix = sess.run([coef_transform_back, H], feed_dict={input_tensor: [gt_image], lane_pts_tensor:pts})
             predict = H_matrix[0]
             R = np.zeros([3, 3], np.float32)
             R[0, 0] = predict[0]
@@ -147,10 +146,9 @@ def hnet_predict(gt_image, hnet_weights, lanes_pts, image):
             print(R)
             warped = cv2.warpPerspective(gt_image, R, (512, 256), flags=cv2.INTER_LINEAR)
             cv2.imwrite('./out/warped.png', warped)
-            print(coefficient_back.shape[1])
             for j in range(coefficient_back.shape[1]):
                 color = color_map[i]
-                cv2.circle(image, (coefficient_back[1][j], coefficient_back[0][j]), 1, (color[0], color[1], color[2]), 2)
+                cv2.circle(image, (coefficient_back[1][j], coefficient_back[0][j]), 1, (color[0], color[1], color[2]), 1)
         t_cost = time.time() - t_start
         log.info('单张图像车道线预测耗时: {:.5f}s'.format(t_cost))
 
