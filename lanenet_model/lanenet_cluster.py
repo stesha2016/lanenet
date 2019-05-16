@@ -169,7 +169,6 @@ class LaneNetCluster(object):
         else:
             cluster_index = range(num_clusters)
 
-        # mask_image = np.zeros(shape=[binary_seg_ret.shape[0], binary_seg_ret.shape[1], 3], dtype=np.uint8)
         mask_image = np.copy(gt_image)
         for index, i in enumerate(cluster_index):
             idx = np.where(labels == i)

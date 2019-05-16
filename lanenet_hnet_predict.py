@@ -107,7 +107,6 @@ def predict_lanenet(gt_image, lanenet_weights):
         cv2.imwrite('./out/predict_lanenet.png', mask_image)
         cv2.imwrite('./out/predict_instance.png', embedding_image)
 
-
     sess.close()
 
     return lane_coordinate, cluster_index, labels
@@ -133,24 +132,15 @@ def hnet_predict(gt_image, hnet_weights, lanes_pts, image):
         for i in range(len(lanes_pts)):
             pts = np.ones(shape=(len(lanes_pts[i]), 3))
             pts[:, 0:2] = lanes_pts[i]
+            pts[:, [0, 1, 2]] = pts[:, [1, 0, 2]]
             coefficient_back, H_matrix = sess.run([coef_transform_back, H], feed_dict={input_tensor: [gt_image], lane_pts_tensor:pts})
-            predict = H_matrix[0]
-            R = np.zeros([3, 3], np.float32)
-            R[0, 0] = predict[0]
-            R[0, 1] = predict[1]
-            R[0, 2] = predict[2]
-            R[1, 1] = predict[3]
-            R[1, 2] = predict[4]
-            R[2, 1] = predict[5]
-            R[2, 2] = 1
-            print(R)
-            warped = cv2.warpPerspective(gt_image, R, (512, 256), flags=cv2.INTER_LINEAR)
-            cv2.imwrite('./out/warped.png', warped)
             for j in range(coefficient_back.shape[1]):
                 color = color_map[i]
-                cv2.circle(image, (coefficient_back[1][j], coefficient_back[0][j]), 1, (color[0], color[1], color[2]), 1)
+                cv2.circle(image, (coefficient_back[0][j], coefficient_back[1][j]), 1, (color[0], color[1], color[2]), 1)
         t_cost = time.time() - t_start
         log.info('单张图像车道线预测耗时: {:.5f}s'.format(t_cost))
+        warped = cv2.warpPerspective(image, H_matrix, (512, 256), flags=cv2.INTER_LINEAR)
+        cv2.imwrite('./out/warped.png', warped)
 
     sess.close()
 

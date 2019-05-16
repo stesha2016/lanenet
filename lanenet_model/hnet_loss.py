@@ -102,7 +102,7 @@ def hnet_transformation(gt_pts, transformation_coeffcient, name):
                                        Y * pts_projects[2, :], pts_projects[2, :]], axis=1))
         x_transformation_back = tf.matmul(tf.matrix_inverse(H), preds)
 
-    return x_transformation_back
+    return x_transformation_back, H
 
 def test():
     import numpy as np

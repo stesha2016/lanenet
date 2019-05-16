@@ -78,7 +78,7 @@ class DataSet(object):
                         if len(lane_pts) == 48:
                             for k in range(8):
                                 lane_pts.append([0, 0, 0])
-                        if count > 20:
+                        if count > 15:
                             label_gt_pts.append(lane_pts)
                             label_image_path.append(image_path)
         return np.array(label_image_path), np.array(label_gt_pts)

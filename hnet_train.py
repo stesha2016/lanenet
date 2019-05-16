@@ -31,10 +31,7 @@ train_dataset = hnet_data_processor.DataSet(glob.glob('./data/tusimple_data/*.js
 update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 with tf.control_dependencies(update_ops):
     pre_optimizer = tf.train.AdamOptimizer(learning_rate=0.0001).minimize(loss=pre_loss, var_list=tf.trainable_variables())
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.00005) #.minimize(loss=c_loss, var_list=tf.trainable_variables())
-    gradients = optimizer.compute_gradients(c_loss)
-    capped_gradients = [(tf.clip_by_value(grad, -0.5, 0.5), var) for grad, var in gradients if grad is not None]
-    train_op = optimizer.apply_gradients(capped_gradients)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.00005).minimize(loss=c_loss, var_list=tf.trainable_variables())
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -44,7 +41,7 @@ with tf.Session() as sess:
         print('Start pre train hnet......')
         if args.pre_hnet_weights:
             saver.restore(sess, args.pre_hnet_weights)
-        for epoch in range(20000):
+        for epoch in range(20005):
             image, label_pts = train_dataset.next_batch(batch_size)
             image = np.array(image)
             _, loss, coefficient = sess.run([pre_optimizer, pre_loss, coef], feed_dict={tensor_in: image})
@@ -76,13 +73,13 @@ with tf.Session() as sess:
             saver.restore(sess, args.pre_hnet_weights)
         else:
             print('train from scratch without H matrix initialize.')
-        for epoch in range(20000):
+        for epoch in range(20005):
             image, label_pts = train_dataset.next_batch(batch_size)
             label_pts = np.array(label_pts)
             label_pts[:, :, 0] = label_pts[:, :, 0] * (512. / 1280.) * 0.25
             label_pts[:, :, 1] = label_pts[:, :, 1] * (256. / 720.) * 0.25
             image = np.array(image)
-            _, loss, coefficient = sess.run([train_op, c_loss, coef], feed_dict={tensor_in: image, gt_label_pts: label_pts})
+            _, loss, coefficient = sess.run([optimizer, c_loss, coef], feed_dict={tensor_in: image, gt_label_pts: label_pts})
             if epoch % 50 == 0:
                 print('epoch[{}], hnet training loss = {}'.format(epoch, loss))
             if epoch % 1000 == 0:

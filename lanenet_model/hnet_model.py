@@ -25,7 +25,6 @@ class HNet(cnn_basenet.CNNBaseModel):
         """
         super(HNet, self).__init__()
         self._is_training = is_training
-        print(self._is_training)
 
         return
 
@@ -96,5 +95,5 @@ class HNet(cnn_basenet.CNNBaseModel):
         """
         with tf.variable_scope(name):
             ceof = self._build_model(input_tensor, name='transfomation_coefficient')
-            return hnet_loss.hnet_transformation(gt_label_pts, ceof, 'inference'), ceof
+            return hnet_loss.hnet_transformation(gt_label_pts, ceof, 'inference')
 
