@@ -27,12 +27,10 @@ The trained lanenet model weights files are stored in
 [new_lanenet_model_file](https://www.dropbox.com/sh/tnsf0lw6psszvy4/AAA81r53jpUI3wLsRW6TiPCya?dl=0). You can 
 download the model and put them in folder model/tusimple_lanenet/
 
-You can test a single image on the trained model as follows
+Added hnet , so you can test a single image on the trained model as follows
 
 ```
-python tools/test_lanenet.py --is_batch False --batch_size 1 
---weights_path path/to/your/model_weights_file 
---image_path data/tusimple_test_image/0.jpg
+python lanenet_hnet_predict.py --image_path ./data/tusimple_data/training/gt_image/0001.png --lanenet_weights ./model/tusimple_lanenet/tusimple_lanenet_enet_2019-05-08-11-11-01.ckpt-100000 --hnet_weights ./model/hnet/hnet-2000
 ```
 The results are as follows:
 
